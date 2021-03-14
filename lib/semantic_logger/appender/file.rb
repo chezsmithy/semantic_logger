@@ -60,8 +60,11 @@ module SemanticLogger
       #    logger =  SemanticLogger['test']
       #    logger.info 'Hello World'
       def initialize(io: nil, file_name: nil, **args, &block)
+        @io_enabled = false
+
         if io
           @log = io
+          @io_enabled = true
         else
           @file_name = file_name
           raise "SemanticLogging::Appender::File missing mandatory parameter :file_name or :io" unless file_name
@@ -79,14 +82,20 @@ module SemanticLogger
       #       on the initializer.
       #       If :io was supplied, it will need to be re-opened manually.
       def reopen
-        return unless @file_name
+        if @io_enabled
+          @log = @log.reopen
+          @io_enabled = true
+        else
+          return unless @file_name
 
-        @log = ::File.open(@file_name, ::File::WRONLY | ::File::APPEND | ::File::CREAT)
-        # Force all log entries to write immediately without buffering
-        # Allows multiple processes to write to the same log file simultaneously
-        @log.sync = true
-        @log.set_encoding(Encoding::BINARY) if @log.respond_to?(:set_encoding)
-        @log
+          @log = ::File.open(@file_name, ::File::WRONLY | ::File::APPEND | ::File::CREAT)
+          # Force all log entries to write immediately without buffering
+          # Allows multiple processes to write to the same log file simultaneously
+          @log.sync = true
+          @log.set_encoding(Encoding::BINARY) if @log.respond_to?(:set_encoding)
+          @io_enabled = false
+          @log
+        end
       end
 
       # Pass log calls to the underlying Rails, log4j or Ruby logger
