@@ -60,9 +60,9 @@ module SemanticLogger
       #    logger =  SemanticLogger['test']
       #    logger.info 'Hello World'
       def initialize(io: nil, file_name: nil, **args, &block)
-        @io_enabled = false
-
         if io
+          @io_name = "STDOUT" if io == STDOUT
+          @io = io
           @log = io
           @io_enabled = true
         else
@@ -83,7 +83,8 @@ module SemanticLogger
       #       If :io was supplied, it will need to be re-opened manually.
       def reopen
         if @io_enabled
-          @log = @log.reopen
+          @log = STDOUT if @io_name == 'STDOUT'
+          # @log = @log.reopen
           @io_enabled = true
         else
           return unless @file_name
